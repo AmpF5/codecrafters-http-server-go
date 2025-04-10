@@ -74,7 +74,7 @@ func handleConnection(conn net.Conn) {
 
 	switch urlParts[1] {
 	case "":
-		msg := "Hello World"
+		msg := ""
 		produceResponse(conn, msg, OK, TextPlain, len(msg))
 	case "echo":
 		msg := urlParts[2]
