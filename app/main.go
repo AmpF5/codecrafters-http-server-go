@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports above (feel free to remove this!)
@@ -22,10 +23,42 @@ func main() {
 		os.Exit(1)
 	}
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	defer l.Close()
+
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			continue
+		}
+
+		handleConnection(conn)
 	}
-	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+}
+
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
+
+	var buff = make([]byte, 1024)
+
+	_, err := conn.Read(buff)
+
+	if err != nil {
+		fmt.Println("Error reading from connection: ", err.Error())
+		return
+	}
+
+	reqPart := getUrl(string(buff))
+
+	if strings.Compare(reqPart, "/") == 0 {
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	} else {
+		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+	}
+
+}
+
+func getUrl(url string) string {
+	parts := strings.Split(url, " ")
+	return parts[1]
 }
