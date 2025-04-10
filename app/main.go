@@ -30,7 +30,7 @@ const (
 )
 
 var contentTypeMap = map[contentType]string{
-	TextPlain: "text/plain\\r\\n",
+	TextPlain: "text/plain\r\n",
 }
 
 func main() {
