@@ -96,7 +96,7 @@ func handleConnection(conn net.Conn) {
 		produceResponse(conn, msg, OK, TextPlain, len(msg))
 	case "files":
 		fileName := urlParts[2]
-		file, err := os.ReadFile("tmp/" + fileName)
+		file, err := os.ReadFile("/tmp/data/codecrafters.io/http-server-tester/" + fileName)
 
 		if err != nil {
 			fmt.Printf("Error reading file: %s\n", err.Error())
