@@ -32,7 +32,7 @@ const (
 
 var contentTypeMap = map[ContentType]string{
 	TextPlain:   "text/plain\r\n",
-	OctetStream: "application/octet-stream",
+	OctetStream: "application/octet-stream\r\n",
 }
 
 type Header struct {
