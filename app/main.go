@@ -55,7 +55,7 @@ func main() {
 			continue
 		}
 
-		handleConnection(conn)
+		go handleConnection(conn)
 	}
 
 }
@@ -118,8 +118,6 @@ func getHeaders(buff []byte) []Header {
 		if len(parts) != 2 {
 			continue
 		}
-
-		fmt.Printf("Header: %s, Value: %s\n", parts[0], parts[1])
 
 		headers = append(headers, Header{
 			Name:  parts[0],
