@@ -23,14 +23,16 @@ var httpResponseStatusCodeMap = map[HttpResponseStatusCode]string{
 	NotFound: "HTTP/1.1 404 Not Found\r\n",
 }
 
-type contentType int
+type ContentType int
 
 const (
-	TextPlain contentType = iota
+	TextPlain ContentType = iota
+	OctetStream
 )
 
-var contentTypeMap = map[contentType]string{
-	TextPlain: "text/plain\r\n",
+var contentTypeMap = map[ContentType]string{
+	TextPlain:   "text/plain\r\n",
+	OctetStream: "application/octet-stream",
 }
 
 type Header struct {
@@ -84,6 +86,7 @@ func handleConnection(conn net.Conn) {
 		produceResponse(conn, msg, OK, TextPlain, len(msg))
 	case "user-agent":
 		msg, err := getHeaderValue(headers, "User-Agent")
+
 		if err != nil {
 			fmt.Printf("Error getting header value: %s\n", err.Error())
 			produceResponse(conn, "", NotFound, TextPlain, 0)
@@ -91,6 +94,18 @@ func handleConnection(conn net.Conn) {
 		}
 
 		produceResponse(conn, msg, OK, TextPlain, len(msg))
+	case "files":
+		fileName := urlParts[2]
+		file, err := os.ReadFile("tmp/" + fileName)
+
+		if err != nil {
+			fmt.Printf("Error reading file: %s\n", err.Error())
+			produceResponse(conn, "", NotFound, TextPlain, 0)
+			return
+		}
+
+		produceResponse(conn, string(file), OK, TextPlain, len(file))
+
 	default:
 		msg := ""
 		produceResponse(conn, msg, NotFound, TextPlain, len(msg))
@@ -143,7 +158,7 @@ func produceResponse(
 	conn net.Conn,
 	msg string,
 	statusCode HttpResponseStatusCode,
-	contentType contentType,
+	contentType ContentType,
 	contentLength int,
 ) {
 	resp := httpResponseStatusCodeMap[statusCode] +
