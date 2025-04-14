@@ -127,7 +127,10 @@ func getHeaders(buff []byte) []Header {
 
 func getHeaderValue(headers []Header, name string) (string, error) {
 	name = strings.ToLower(name)
+	fmt.Print("Length of headers: ", len(headers))
+	fmt.Printf("Searching for header: %s\n", name)
 	for _, header := range headers {
+		fmt.Printf("Header: %s, Value: %s\n", header.Name, header.Value)
 		if name == strings.ToLower(header.Name) {
 			return header.Value, nil
 		}
