@@ -33,6 +33,10 @@ var contentTypeMap = map[contentType]string{
 	TextPlain: "text/plain\r\n",
 }
 
+type Header struct {
+	Name, Value string
+}
+
 func main() {
 	fmt.Println("Logs from your program will appear here!")
 
@@ -53,9 +57,11 @@ func main() {
 
 		handleConnection(conn)
 	}
+
 }
 
 func handleConnection(conn net.Conn) {
+	defer conn.Close()
 
 	var buff = make([]byte, 1024)
 
@@ -66,11 +72,8 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 
-	urlParts := strings.Split(getUrl(string(buff)), "/")
-
-	// for _, part := range urlParts {
-	// 	fmt.Printf("Part %s\n", part)
-	// }
+	urlParts := getUrl(buff)
+	headers := getHeaders(buff)
 
 	switch urlParts[1] {
 	case "":
@@ -78,31 +81,59 @@ func handleConnection(conn net.Conn) {
 		produceResponse(conn, msg, OK, TextPlain, len(msg))
 	case "echo":
 		msg := urlParts[2]
-		// fmt.Printf("Echo %s\n", msg)
+		produceResponse(conn, msg, OK, TextPlain, len(msg))
+	case "user-agent":
+		msg, err := getHeaderValue(headers, "User-Agent")
+		if err != nil {
+			fmt.Printf("Error getting header value: %s\n", err.Error())
+			produceResponse(conn, "", NotFound, TextPlain, 0)
+			return
+		}
+
 		produceResponse(conn, msg, OK, TextPlain, len(msg))
 	default:
 		msg := ""
 		produceResponse(conn, msg, NotFound, TextPlain, len(msg))
 	}
-
-	defer conn.Close()
-
-	// if strings.Compare(reqPart, "/") == 0 {
-	// 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-	// } else {
-	// 	conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
-	// }
-
 }
 
-func getUrl(url string) string {
-	parts := strings.Split(url, " ")
+func getUrl(buff []byte) []string {
+	parts := strings.Split(string(buff), " ")
+	return strings.Split(parts[1], "/")
+}
 
-	// for _, part := range parts {
-	// 	fmt.Printf("Part %s\n", part)
-	// }
+func getHeaders(buff []byte) []Header {
+	lines := strings.Split(string(buff), "\r\n")
 
-	return parts[1]
+	headersValues := lines[3:]
+
+	headers := make([]Header, 0, len(headersValues))
+
+	for _, header := range headersValues {
+		headerParts := strings.Split(header, ": ")
+
+		if len(headerParts) != 2 {
+			continue
+		}
+
+		headers = append(headers, Header{
+			Name:  headerParts[0],
+			Value: headerParts[1],
+		})
+	}
+
+	return headers
+}
+
+func getHeaderValue(headers []Header, name string) (string, error) {
+	name = strings.ToLower(name)
+	for _, header := range headers {
+		if name == strings.ToLower(header.Name) {
+			return header.Value, nil
+		}
+	}
+
+	return "", fmt.Errorf("header %s not found", name)
 }
 
 func produceResponse(
