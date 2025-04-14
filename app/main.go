@@ -19,8 +19,8 @@ const (
 )
 
 var httpResponseStatusCodeMap = map[HttpResponseStatusCode]string{
-	OK:       "HTTP/1.1 200 OK\r\n\r\n",
-	NotFound: "HTTP/1.1 404 Not Found\r\n\r\n",
+	OK:       "HTTP/1.1 200 OK\r\n",
+	NotFound: "HTTP/1.1 404 Not Found\r\n",
 }
 
 type contentType int
@@ -105,20 +105,25 @@ func getUrl(buff []byte) []string {
 func getHeaders(buff []byte) []Header {
 	lines := strings.Split(string(buff), "\r\n")
 
-	headersValues := lines[3:]
+	var headers []Header
 
-	headers := make([]Header, 0, len(headersValues))
+	for i := 1; i < len(lines); i++ {
+		line := lines[i]
 
-	for _, header := range headersValues {
-		headerParts := strings.Split(header, ": ")
+		if line == "" {
+			break
+		}
 
-		if len(headerParts) != 2 {
+		parts := strings.SplitN(line, ": ", 2)
+		if len(parts) != 2 {
 			continue
 		}
 
+		fmt.Printf("Header: %s, Value: %s\n", parts[0], parts[1])
+
 		headers = append(headers, Header{
-			Name:  headerParts[0],
-			Value: headerParts[1],
+			Name:  parts[0],
+			Value: parts[1],
 		})
 	}
 
@@ -127,10 +132,7 @@ func getHeaders(buff []byte) []Header {
 
 func getHeaderValue(headers []Header, name string) (string, error) {
 	name = strings.ToLower(name)
-	fmt.Print("Length of headers: ", len(headers))
-	fmt.Printf("Searching for header: %s\n", name)
 	for _, header := range headers {
-		fmt.Printf("Header: %s, Value: %s\n", header.Name, header.Value)
 		if name == strings.ToLower(header.Name) {
 			return header.Value, nil
 		}
@@ -146,7 +148,12 @@ func produceResponse(
 	contentType contentType,
 	contentLength int,
 ) {
-	resp := httpResponseStatusCodeMap[statusCode] + "Content-Type: " + contentTypeMap[contentType] + "Content-Length: " + strconv.Itoa(contentLength) + "\r\n\r\n" + msg
+	resp := httpResponseStatusCodeMap[statusCode] +
+		"Content-Type: " + contentTypeMap[contentType] +
+		"Content-Length: " + strconv.Itoa(contentLength) +
+		"\r\n\r\n" +
+		msg
+
 	fmt.Printf("%s\n", resp)
 	conn.Write([]byte(resp))
 }
