@@ -104,7 +104,7 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 
-		produceResponse(conn, string(file), OK, TextPlain, len(file))
+		produceResponse(conn, string(file), OK, OctetStream, len(file))
 
 	default:
 		msg := ""
