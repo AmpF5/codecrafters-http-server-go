@@ -16,11 +16,13 @@ type HttpResponseStatusCode int
 const (
 	OK HttpResponseStatusCode = iota
 	NotFound
+	Created
 )
 
 var httpResponseStatusCodeMap = map[HttpResponseStatusCode]string{
 	OK:       "HTTP/1.1 200 OK\r\n",
 	NotFound: "HTTP/1.1 404 Not Found\r\n",
+	Created:  "HTTP/1.1 201 Created\r\n",
 }
 
 type ContentType int
@@ -74,42 +76,65 @@ func handleConnection(conn net.Conn) {
 		return
 	}
 
+	httpMethod := getHttpMethod(buff)
 	urlParts := getUrl(buff)
 	headers := getHeaders(buff)
 
-	switch urlParts[1] {
-	case "":
-		msg := ""
-		produceResponse(conn, msg, OK, TextPlain, len(msg))
-	case "echo":
-		msg := urlParts[2]
-		produceResponse(conn, msg, OK, TextPlain, len(msg))
-	case "user-agent":
-		msg, err := getHeaderValue(headers, "User-Agent")
+	switch httpMethod {
+	case "GET":
+		switch urlParts[1] {
+		case "":
+			msg := ""
+			produceResponse(conn, msg, OK, TextPlain, len(msg))
+		case "echo":
+			msg := urlParts[2]
+			produceResponse(conn, msg, OK, TextPlain, len(msg))
+		case "user-agent":
+			msg, err := getHeaderValue(headers, "User-Agent")
 
-		if err != nil {
-			fmt.Printf("Error getting header value: %s\n", err.Error())
-			produceResponse(conn, "", NotFound, TextPlain, 0)
-			return
+			if err != nil {
+				fmt.Printf("Error getting header value: %s\n", err.Error())
+				produceResponse(conn, "", NotFound, TextPlain, 0)
+				return
+			}
+
+			produceResponse(conn, msg, OK, TextPlain, len(msg))
+		case "files":
+			fileName := urlParts[2]
+			file, err := os.ReadFile("/tmp/data/codecrafters.io/http-server-tester/" + fileName)
+
+			if err != nil {
+				fmt.Printf("Error reading file: %s\n", err.Error())
+				produceResponse(conn, "", NotFound, TextPlain, 0)
+				return
+			}
+
+			produceResponse(conn, string(file), OK, OctetStream, len(file))
+
+		default:
+			msg := ""
+			produceResponse(conn, msg, NotFound, TextPlain, len(msg))
 		}
+	case "POST":
+		switch urlParts[1] {
+		case "files":
+			body := getRequestBody(buff)
+			os.WriteFile("/tmp/data/codecrafters.io/http-server-tester/"+urlParts[2], []byte(body), 0644)
+			produceResponse(conn, "", Created, TextPlain, 0)
 
-		produceResponse(conn, msg, OK, TextPlain, len(msg))
-	case "files":
-		fileName := urlParts[2]
-		file, err := os.ReadFile("/tmp/data/codecrafters.io/http-server-tester/" + fileName)
-
-		if err != nil {
-			fmt.Printf("Error reading file: %s\n", err.Error())
-			produceResponse(conn, "", NotFound, TextPlain, 0)
-			return
+		default:
+			produceResponse(conn, "Not valid HTTP method", NotFound, TextPlain, 0)
 		}
-
-		produceResponse(conn, string(file), OK, OctetStream, len(file))
-
-	default:
-		msg := ""
-		produceResponse(conn, msg, NotFound, TextPlain, len(msg))
 	}
+}
+
+func getHttpMethod(buff []byte) string {
+	parts := strings.Split(string(buff), " ")
+	if len(parts) < 1 {
+		return ""
+	}
+
+	return parts[0]
 }
 
 func getUrl(buff []byte) []string {
@@ -152,6 +177,18 @@ func getHeaderValue(headers []Header, name string) (string, error) {
 	}
 
 	return "", fmt.Errorf("header %s not found", name)
+}
+
+func getRequestBody(buff []byte) string {
+	lines := strings.Split(string(buff), "\r\n")
+
+	if len(lines) < 2 {
+		return ""
+	}
+
+	body := lines[len(lines)-1]
+
+	return body
 }
 
 func produceResponse(
