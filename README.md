@@ -1,37 +1,47 @@
 [![progress-banner](https://backend.codecrafters.io/progress/http-server/a646075d-b990-46cb-8ac9-3c2299709139)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
-This is a starting point for Go solutions to the
-["Build Your Own HTTP server" Challenge](https://app.codecrafters.io/courses/http-server/overview).
+# HTTP Server Implementation
 
-[HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol) is the
-protocol that powers the web. In this challenge, you'll build a HTTP/1.1 server
-that is capable of serving multiple clients.
+A lightweight but feature-rich HTTP/1.1 server written in Go. This server was developed as part of the CodeCrafters "Build Your Own HTTP Server" challenge.
 
-Along the way you'll learn about TCP servers,
-[HTTP request syntax](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html),
-and more.
+## Features
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+- Handles multiple concurrent client connections using goroutines
+- Supports GET and POST HTTP methods
+- Echo functionality that returns the provided content
+- User-agent detection
+- File operations (reading and writing)
+- HTTP status code handling (200 OK, 201 Created, 404 Not Found)
+- Content-type support (text/plain, application/octet-stream)
 
-# Passing the first stage
+## Implementation Details
 
-The entry point for your HTTP server implementation is in `app/main.go`. Study
-and uncomment the relevant code, and push your changes to pass the first stage:
+The server uses Go's native networking capabilities to create a TCP server that listens on port 4221. When a connection is received, it parses the HTTP request, extracts method, URL, headers, and request body when applicable.
+
+Key components include:
+- Request parsing
+- Header management
+- File operations
+- Response building with appropriate status codes
+- Concurrent connection handling
+
+## Running the Server
 
 ```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
+./your_program.sh
 ```
 
-Time to move on to the next stage!
+This will start the server on port 4221, ready to accept incoming HTTP requests.
 
-# Stage 2 & beyond
+## Development
 
-Note: This section is for stages 2 and beyond.
+The main implementation is in `app/main.go`. To make changes:
 
-1. Ensure you have `go (1.24)` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `app/main.go`.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+1. Ensure you have Go 1.24 installed
+2. Modify the code in `app/main.go`
+3. Run the server using the provided script
+4. Test with any HTTP client (curl, browser, etc.)
+
+## License
+
+This project is part of the CodeCrafters challenge and is intended for educational purposes.
