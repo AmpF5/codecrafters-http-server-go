@@ -118,8 +118,23 @@ func handleConnection(conn net.Conn) {
 	case "POST":
 		switch urlParts[1] {
 		case "files":
-			body := getRequestBody(buff)
-			os.WriteFile("/tmp/data/codecrafters.io/http-server-tester/"+urlParts[2], []byte(body), 0644)
+			contentLengthStr, err := getHeaderValue(headers, "Content-Length")
+			if err != nil {
+				fmt.Printf("Error getting header value: %s\n", err.Error())
+				produceResponse(conn, "", NotFound, TextPlain, 0)
+				return
+			}
+
+			contentLength, err := strconv.Atoi(contentLengthStr)
+			if err != nil {
+				fmt.Printf("Error converting content length: %s\n", err.Error())
+				produceResponse(conn, "", NotFound, TextPlain, 0)
+				return
+			}
+
+			body := getRequestBody(buff, contentLength)
+			fileName := urlParts[2]
+			os.WriteFile("/tmp/data/codecrafters.io/http-server-tester/"+fileName, []byte(body), 0644)
 			produceResponse(conn, "", Created, TextPlain, 0)
 
 		default:
@@ -179,7 +194,7 @@ func getHeaderValue(headers []Header, name string) (string, error) {
 	return "", fmt.Errorf("header %s not found", name)
 }
 
-func getRequestBody(buff []byte) string {
+func getRequestBody(buff []byte, contentLength int) string {
 	lines := strings.Split(string(buff), "\r\n")
 
 	if len(lines) < 2 {
@@ -188,7 +203,16 @@ func getRequestBody(buff []byte) string {
 
 	body := lines[len(lines)-1]
 
-	return body
+	result := ""
+
+	for i := 0; i < contentLength; i++ {
+		if len(lines) < 2 {
+			break
+		}
+		result += body[i : i+1]
+	}
+
+	return result
 }
 
 func produceResponse(
